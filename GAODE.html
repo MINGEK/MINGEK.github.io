@@ -1,0 +1,199 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <title>地图显示</title>
+    <style>
+        html,
+        body,
+        #container {
+          width: 100%;
+          height: 100%;
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<div class="input-card" style="width:8rem">
+<h4>官方样式</h4>
+<div id="map-styles">
+  <div class="input-item"><input type='radio' name='mapStyle' value='normal' checked><span>标准</span></div>
+  <div class="input-item"><input type='radio' name='mapStyle' value='dark'><span>幻影黑</span></div>
+  <div class="input-item"><input type='radio' name='mapStyle' value='light'><span>月光银</span></div>
+  <div class="input-item"><input type='radio' name='mapStyle' value='whitesmoke'><span>远山黛</span></div>
+  <div class="input-item"><input type='radio' name='mapStyle' value='fresh'><span>草色青</span></div>
+  <div class="input-item"><input type='radio' name='mapStyle' value='grey'><span>雅士灰</span></div>
+  <div class="input-item"><input type='radio' name='mapStyle' value='graffiti'><span>涂鸦</span></div>
+  <div class="input-item"><input type='radio' name='mapStyle' value='macaron'><span>马卡龙</span></div>
+  <div class="input-item"><input type='radio' name='mapStyle' value='blue'><span>靛青蓝</span></div>
+  <div class="input-item"><input type='radio' name='mapStyle' value='darkblue'><span>极夜蓝</span></div>
+  <div class="input-item"><input type='radio' name='mapStyle' value='wine'><span>酱籽</span></div>
+  <div class="input-item"><input type='radio' name='mapStyle' value='92f4657fa15de678bc920a1e8b220577'><span>自定义</span></div>
+</div>
+</div>
+<!-- 加载地图JSAPI脚本 -->
+<script type="text/javascript">
+      window._AMapSecurityConfig = {
+        securityJsCode: "612cccf9ae8e6b9eb32c75f757979ddb",
+      };
+</script>
+<script src="https://webapi.amap.com/maps?v=2.0&key=5889f11ee154f5bf1515af087d22bc1b
+	&plugin=AMap.Scale,AMap.ToolBar,AMap.ControlBar,AMap.Geocoder,AMap.DistrictSearch,AMap.Polygon,AMap.CitySearch">
+	//同步预加载插件 
+	</script>
+<script>
+//---------------------------信息存储---------------------
+	//城市 ploy存储
+	let city_poly={};
+	// 添加城市数据的函数
+	function addCityData(city,poly) {
+	city_poly=poly
+	}
+//-----------------------------------------------地图控件----------------------------------------
+    var scale = new AMap.Scale({
+        visible: true		
+		}),
+		toolBar = new AMap.ToolBar({
+			visible: true,
+			position: {
+			  top: '110px',
+			  right: '40px'
+			}
+		}),
+		controlBar = new AMap.ControlBar({
+			visible: true,
+			position: {
+			  top: '10px',
+			  right: '10px'
+			}
+		});
+	//-----------------------------------------------地图显示--------------------------------------------
+	let map = new AMap.Map('container', {
+		rotateEnable:true,
+		pitchEnable:true,
+		zoom: 9,
+		pitch: 30,
+		rotation:0,
+		viewMode:'3D', //开启3D视图,默认为关闭
+		zooms:[2,20],
+		zIndex: 50,
+	  });
+	//-----------------------------------------逆地理编码 函数-------------------------------------------
+	var geocoder=new AMap.Geocoder({
+		radius:1000,
+		extensions:"base"
+		});
+	var address_city;
+    function regeoCode() {
+        
+        var lnglat  = jwd
+        geocoder.getAddress(lnglat, function(status, result) {
+            if (status === 'complete'&&result.regeocode) {
+                address = result.regeocode.formattedAddress;
+				l=result;
+                console.log("地 址：",address);
+				address_city=result.regeocode.addressComponent.citycode;
+				mmm=result.regeocode.addressComponent.city;
+				console.log(address_city,mmm)
+				dist(address_city);
+				
+            }else{
+                console.log.error('根据经纬度查询地址失败')
+            }
+        });
+    }	
+	//--------------------------------------------行政区查询 函数-----------------------------------------------
+	var bounds;
+	var districtSearch = new AMap.DistrictSearch({
+		// 关键字对应的行政区级别，country表示国家
+		subdistrict: 0,
+        extensions: 'all',  //返回行政区边界坐标组等具体信息
+        level: 'city'  //查询行政级别为 市
+		})
+	var city_code=[]
+	function dist(city_code){
+		districtSearch.search(city_code, function(status, result) {
+			// 查询成功时，result即为对应的行政区信息
+		//console.log(result);
+		bounds=result.districtList[0].boundaries;
+		//console.log(result.districtList[0].boundaries);
+		draw(bounds);
+		})
+		}
+	//字符串 行政区 市级查询
+	
+	//----------------------------------------------行政区边界绘制------------------------------------------------------
+
+	function draw(data){
+		//for 循环加入可以使得行政区 显示 完整
+		for (var i = 0; i < bounds.length; i += 1) {//构造MultiPolygon的path
+			data[i] = [data[i]]
+			}
+		let poly=new AMap.Polygon({
+			  path: data,
+			  fillColor: '#6495ED',
+			  strokeOpacity: 1,
+			  fillOpacity: 0.5,
+			  strokeColor: '#00BFFF',
+			  strokeWeight: 3,
+			  clickable: false,
+			  strokeStyle: 'dashed',
+			  strokeDasharray: [5, 5],
+			  zIndex: 10,
+			})
+		map.add(poly);
+		//map.setFitView(poly);
+		poly.on('dblclick',function(e){
+			console.log('右键点击多边形', e);
+            poly.hide();
+		})
+		poly.on('mouseover', () => {
+			poly.setOptions({
+			fillOpacity: 0.7,
+			fillColor: '#48D1CC'
+			})
+		})
+	    poly.on('mouseout', () => {
+			poly.setOptions({
+			fillOpacity: 0.5,
+			fillColor: '#AFEEEE'
+			})
+		})
+		
+		console.log(bounds);
+
+
+		}
+	
+	//----------------------------------------------地图风格-----------------------------------------------------------
+    var radios = document.querySelectorAll("#map-styles input");
+    radios.forEach(function(ratio) {
+      ratio.onclick = setMapStyle;
+    });
+	
+    function setMapStyle() {
+      var styleName = "amap://styles/" + this.value;  
+      map.setMapStyle(styleName);
+    }
+	 //---------------------------------------------鼠标交互------------------------------------------------
+	var jwd;
+	//鼠标左键 响应
+    map.on('click',function(e){
+        lnglat = e.lnglat; //获取点 击位置  经纬度 
+		jwd=[lnglat.lng,lnglat.lat];
+        console.log("经纬度 ：",jwd);//控制台 输出 点击位置经纬度
+        regeoCode(); //调用regecode 函数（控制台输出 点击位置文本）
+		})
+	//鼠标右键 响应
+
+	//事件加入
+    map.addControl(scale);
+    map.addControl(toolBar);
+    map.addControl(controlBar);
+	map.setFitView();
+</script>
+</body>
+</html>
